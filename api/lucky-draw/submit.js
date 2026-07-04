@@ -1,7 +1,7 @@
 const FEISHU_API = 'https://open.feishu.cn/open-apis';
 
 const FIELD_NAMES = {
-  name: process.env.FEISHU_FIELD_NAME || '用户姓名',
+  person: process.env.FEISHU_FIELD_PERSON || process.env.FEISHU_FIELD_NAME || '用户姓名',
   userId: process.env.FEISHU_FIELD_USER_ID || '飞书用户 ID',
   openId: process.env.FEISHU_FIELD_OPEN_ID || 'open_id',
   email: process.env.FEISHU_FIELD_EMAIL || '邮箱',
@@ -215,7 +215,7 @@ async function findExistingSubmission(tenantToken, stableUserId) {
 async function createSubmissionRecord(tenantToken, submission) {
   const { user, stableUserId, submittedAtMs, completedCount, totalBooths, completedBoothIds } = submission;
   const fields = {
-    [FIELD_NAMES.name]: user.name || user.en_name || '',
+    [FIELD_NAMES.person]: buildPersonFieldValue(user, stableUserId),
     [FIELD_NAMES.userId]: stableUserId,
     [FIELD_NAMES.openId]: user.open_id || '',
     [FIELD_NAMES.email]: user.email || '',
@@ -232,6 +232,11 @@ async function createSubmissionRecord(tenantToken, submission) {
     token: tenantToken,
     body: { fields }
   });
+}
+
+function buildPersonFieldValue(user, stableUserId) {
+  const personId = user.open_id || user.user_id || stableUserId;
+  return personId ? [{ id: personId }] : [];
 }
 
 function bitableAppToken() {
