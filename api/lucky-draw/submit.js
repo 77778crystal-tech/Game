@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const user = await getFeishuUser(body.feishuAuthCode);
+    const user = await getSubmitter(body);
     const stableUserId = user.user_id || user.open_id || user.union_id;
     if (!stableUserId) {
       res.status(401).json({
@@ -150,6 +150,34 @@ async function getFeishuUser(authCode) {
     token: userAccessToken
   });
   return userInfo.data || userInfo;
+}
+
+async function getSubmitter(body) {
+  try {
+    return await getFeishuUser(body.feishuAuthCode);
+  } catch (error) {
+    if (error.code !== 'NO_FEISHU_USER') {
+      throw error;
+    }
+    const participantId = normalizeParticipantId(body.participantId);
+    if (!participantId) {
+      throw error;
+    }
+    return {
+      user_id: participantId,
+      open_id: '',
+      union_id: '',
+      name: '浏览器参与者',
+      email: '',
+      employee_id: ''
+    };
+  }
+}
+
+function normalizeParticipantId(value) {
+  const id = String(value || '').trim();
+  if (!id || !id.startsWith('browser_')) return '';
+  return id.replace(/[^\w-]/g, '').slice(0, 96);
 }
 
 async function exchangeAuthCode(authCode, appAccessToken) {

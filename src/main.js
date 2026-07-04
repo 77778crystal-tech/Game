@@ -3,6 +3,7 @@ import booths from './data/booths.js';
 const IS_FILE = window.location.protocol === 'file:';
 const ASSET = IS_FILE ? './public/assets/' : '/assets/';
 const STORAGE_KEY = 'english-booth-progress-v1';
+const PARTICIPANT_KEY = 'english-booth-lucky-draw-participant-v1';
 const FEISHU_APP_ID = import.meta.env?.VITE_FEISHU_APP_ID || '';
 const app = document.querySelector('#app');
 
@@ -526,6 +527,7 @@ async function submitLuckyDraw() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         feishuAuthCode,
+        participantId: getParticipantId(),
         completedCount: completeCount,
         totalBooths,
         completedBoothIds: [...state.completed]
@@ -547,13 +549,26 @@ function applyDrawSubmitResult(result) {
     submitted: '已提交，祝你中奖！',
     alreadySubmitted: '你已经提交过啦，无需重复提交。',
     notCompleted: '请先完成全部关卡后再参与抽奖。',
-    noFeishuUser: '请在飞书内打开该游戏后再提交抽奖报名。',
+    noFeishuUser: '提交失败，请稍后重试。',
     error: '提交失败，请稍后重试。'
   };
   state.drawSubmitStatus = result.status || (result.success ? 'submitted' : 'error');
   state.drawSubmitMessage = result.message || messages[state.drawSubmitStatus] || messages.error;
   playSfx(result.success ? 'complete' : 'wrong');
   render();
+}
+
+function getParticipantId() {
+  try {
+    const existing = localStorage.getItem(PARTICIPANT_KEY);
+    if (existing) return existing;
+    const randomId = crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const participantId = `browser_${randomId}`;
+    localStorage.setItem(PARTICIPANT_KEY, participantId);
+    return participantId;
+  } catch {
+    return `browser_${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
 }
 
 function requestFeishuAuthCode() {
