@@ -138,7 +138,11 @@ async function getFeishuUser(authCode) {
 
   const appAccessToken = await getAppAccessToken();
   const tokenData = await exchangeAuthCode(authCode, appAccessToken);
-  const userAccessToken = tokenData.access_token || tokenData.user_access_token;
+  const userAccessToken =
+    tokenData.access_token ||
+    tokenData.user_access_token ||
+    tokenData.data?.access_token ||
+    tokenData.data?.user_access_token;
   if (!userAccessToken) {
     const error = new Error('No user access token');
     error.code = 'NO_FEISHU_USER';
@@ -153,6 +157,19 @@ async function getFeishuUser(authCode) {
 }
 
 async function exchangeAuthCode(authCode, appAccessToken) {
+  try {
+    return await feishuFetch('/authen/v2/oauth/token', {
+      method: 'POST',
+      token: appAccessToken,
+      body: {
+        grant_type: 'authorization_code',
+        code: authCode
+      }
+    });
+  } catch {
+    // Fall through to legacy endpoints for tenants still on older auth flows.
+  }
+
   try {
     return await feishuFetch('/authen/v1/oidc/access_token', {
       method: 'POST',
