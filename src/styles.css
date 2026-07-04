@@ -104,6 +104,11 @@ button {
   font-size: 18px;
 }
 
+.pixel-btn:disabled {
+  cursor: default;
+  filter: saturate(.85);
+}
+
 .map-ui {
   position: absolute;
   inset: 0;
@@ -823,6 +828,36 @@ button {
   font-size: 20px;
   font-weight: 750;
   line-height: 1.45;
+}
+
+.draw-submit-btn {
+  min-width: 330px;
+  max-width: 100%;
+  padding: 0 22px;
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+.draw-submit-message {
+  margin: 18px auto 0;
+  max-width: 460px;
+  border: 3px solid #253b48;
+  border-radius: 6px;
+  background: #f8feff;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.draw-submit-message.error,
+.draw-submit-message.notCompleted,
+.draw-submit-message.noFeishuUser {
+  color: #d94848;
+}
+
+.draw-submit-message.submitted,
+.draw-submit-message.alreadySubmitted {
+  color: #248761;
 }
 
 .pixel-icon {

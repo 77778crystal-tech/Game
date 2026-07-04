@@ -3,6 +3,7 @@ import booths from './data/booths.js';
 const IS_FILE = window.location.protocol === 'file:';
 const ASSET = IS_FILE ? './public/assets/' : '/assets/';
 const STORAGE_KEY = 'english-booth-progress-v1';
+const FEISHU_APP_ID = import.meta.env?.VITE_FEISHU_APP_ID || '';
 const app = document.querySelector('#app');
 
 const state = {
@@ -16,6 +17,8 @@ const state = {
   matchAnswers: {},
   selectedLotId: null,
   hintVisible: false,
+  drawSubmitStatus: 'idle',
+  drawSubmitMessage: '',
   feedback: ''
 };
 
@@ -73,6 +76,8 @@ function setScreen(screen) {
   state.matchAnswers = {};
   state.selectedLotId = null;
   state.hintVisible = false;
+  state.drawSubmitStatus = 'idle';
+  state.drawSubmitMessage = '';
   state.feedback = '';
   render();
 }
@@ -85,6 +90,10 @@ function openModal(modal, boothId = null) {
   state.matchAnswers = {};
   state.selectedLotId = null;
   state.hintVisible = false;
+  if (modal === 'draw') {
+    state.drawSubmitStatus = 'idle';
+    state.drawSubmitMessage = '';
+  }
   state.feedback = '';
   render();
 }
@@ -410,15 +419,23 @@ function renderSuccessModal() {
 }
 
 function renderDrawModal() {
+  const isSubmitting = state.drawSubmitStatus === 'submitting';
+  const isDone = state.drawSubmitStatus === 'submitted' || state.drawSubmitStatus === 'alreadySubmitted';
+  const buttonText = isSubmitting
+    ? '提交中...'
+    : isDone
+      ? '已提交，祝你中奖！'
+      : '点击我已通关，参与后续抽奖🎁';
   return `
     <div class="modal-layer">
       <article class="pixel-modal draw-modal" role="dialog" aria-modal="true">
         <div class="draw-ticket">LUCKY DRAW</div>
         <h2>Lucky Draw Unlocked!</h2>
-        <p>You completed all 7 booths. Show this screen to enter the lucky draw.</p>
+        <p>You completed all 7 booths.</p>
+        ${state.drawSubmitMessage ? `<p class="draw-submit-message ${state.drawSubmitStatus}" role="status">${state.drawSubmitMessage}</p>` : ''}
         <div class="modal-actions centered">
           <button class="pixel-btn secondary compact" data-action="map">BACK</button>
-          <button class="pixel-btn primary compact" data-action="close">Got it!</button>
+          <button class="pixel-btn primary compact draw-submit-btn" data-action="submit-lucky-draw" ${isSubmitting || isDone ? 'disabled' : ''}>${buttonText}</button>
         </div>
       </article>
     </div>
@@ -464,6 +481,7 @@ function handleAction(action, payload = {}) {
   if (action === 'start-question') { playSfx('start'); openModal('question', boothId); }
   if (action === 'booth-back') { playSfx('click'); closeModal(); }
   if (action === 'draw') { playSfx('draw'); openModal('draw'); }
+  if (action === 'submit-lucky-draw') submitLuckyDraw();
   if (action === 'toggle-hint') {
     playSfx('click');
     state.hintVisible = !state.hintVisible;
@@ -482,6 +500,94 @@ function handleAction(action, payload = {}) {
     render();
   }
   if (action === 'submit') submitAnswer();
+}
+
+async function submitLuckyDraw() {
+  if (state.drawSubmitStatus === 'submitting') return;
+  const totalBooths = state.booths.length || 7;
+  const completeCount = completedCount();
+
+  if (completeCount !== totalBooths || totalBooths !== 7) {
+    playSfx('wrong');
+    state.drawSubmitStatus = 'notCompleted';
+    state.drawSubmitMessage = '请先完成全部关卡后再参与抽奖。';
+    render();
+    return;
+  }
+
+  state.drawSubmitStatus = 'submitting';
+  state.drawSubmitMessage = '';
+  render();
+
+  try {
+    const feishuAuthCode = await requestFeishuAuthCode();
+    const response = await fetch('/api/lucky-draw/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        feishuAuthCode,
+        completedCount: completeCount,
+        totalBooths,
+        completedBoothIds: [...state.completed]
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    applyDrawSubmitResult(result);
+  } catch {
+    applyDrawSubmitResult({
+      success: false,
+      status: 'error',
+      message: '提交失败，请稍后重试。'
+    });
+  }
+}
+
+function applyDrawSubmitResult(result) {
+  const messages = {
+    submitted: '已提交，祝你中奖！',
+    alreadySubmitted: '你已经提交过啦，无需重复提交。',
+    notCompleted: '请先完成全部关卡后再参与抽奖。',
+    noFeishuUser: '请在飞书内打开该游戏后再提交抽奖报名。',
+    error: '提交失败，请稍后重试。'
+  };
+  state.drawSubmitStatus = result.status || (result.success ? 'submitted' : 'error');
+  state.drawSubmitMessage = result.message || messages[state.drawSubmitStatus] || messages.error;
+  playSfx(result.success ? 'complete' : 'wrong');
+  render();
+}
+
+function requestFeishuAuthCode() {
+  return new Promise((resolve) => {
+    if (!FEISHU_APP_ID) {
+      resolve(null);
+      return;
+    }
+
+    const bridge = window.tt || window.h5sdk?.tt || window.lark;
+    const requestAuthCode = bridge?.requestAuthCode || window.requestAuthCode;
+    if (typeof requestAuthCode !== 'function') {
+      resolve(null);
+      return;
+    }
+
+    let settled = false;
+    const finish = (code) => {
+      if (settled) return;
+      settled = true;
+      resolve(code || null);
+    };
+
+    try {
+      requestAuthCode.call(bridge, {
+        appId: FEISHU_APP_ID,
+        success: (res) => finish(res?.code),
+        fail: () => finish(null)
+      });
+      setTimeout(() => finish(null), 5000);
+    } catch {
+      finish(null);
+    }
+  });
 }
 
 function submitAnswer() {
