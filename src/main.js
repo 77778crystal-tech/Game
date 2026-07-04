@@ -3,6 +3,7 @@ import booths from './data/booths.js';
 const IS_FILE = window.location.protocol === 'file:';
 const ASSET = IS_FILE ? './public/assets/' : '/assets/';
 const STORAGE_KEY = 'english-booth-progress-v1';
+const LUCKY_DRAW_OAUTH_STATE_KEY = 'english-booth-lucky-draw-oauth-state';
 const FEISHU_APP_ID = import.meta.env?.VITE_FEISHU_APP_ID || '';
 const app = document.querySelector('#app');
 
@@ -60,6 +61,14 @@ function saveProgress() {
 async function boot() {
   loadProgress();
   state.booths = booths;
+  const oauthCode = consumeLuckyDrawOAuthCode();
+  if (oauthCode) {
+    state.screen = 'map';
+    state.modal = 'draw';
+    render();
+    await submitLuckyDraw(oauthCode);
+    return;
+  }
   render();
 }
 
@@ -502,7 +511,7 @@ function handleAction(action, payload = {}) {
   if (action === 'submit') submitAnswer();
 }
 
-async function submitLuckyDraw() {
+async function submitLuckyDraw(authCodeOverride = null) {
   if (state.drawSubmitStatus === 'submitting') return;
   const totalBooths = state.booths.length || 7;
   const completeCount = completedCount();
@@ -520,7 +529,11 @@ async function submitLuckyDraw() {
   render();
 
   try {
-    const feishuAuthCode = await requestFeishuAuthCode();
+    const feishuAuthCode = authCodeOverride || await requestFeishuAuthCode();
+    if (!feishuAuthCode) {
+      redirectToFeishuOAuth();
+      return;
+    }
     const response = await fetch('/api/lucky-draw/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -554,6 +567,44 @@ function applyDrawSubmitResult(result) {
   state.drawSubmitMessage = result.message || messages[state.drawSubmitStatus] || messages.error;
   playSfx(result.success ? 'complete' : 'wrong');
   render();
+}
+
+function consumeLuckyDrawOAuthCode() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const stateParam = params.get('state');
+  if (!code || !stateParam) return null;
+
+  const expectedState = localStorage.getItem(LUCKY_DRAW_OAUTH_STATE_KEY);
+  if (!expectedState || stateParam !== expectedState) return null;
+
+  localStorage.removeItem(LUCKY_DRAW_OAUTH_STATE_KEY);
+  params.delete('code');
+  params.delete('state');
+  const cleanQuery = params.toString();
+  const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', cleanUrl);
+  return code;
+}
+
+function redirectToFeishuOAuth() {
+  if (!FEISHU_APP_ID) {
+    applyDrawSubmitResult({
+      success: false,
+      status: 'noFeishuUser',
+      message: '缺少飞书应用配置，请稍后重试。'
+    });
+    return;
+  }
+
+  const oauthState = crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  localStorage.setItem(LUCKY_DRAW_OAUTH_STATE_KEY, oauthState);
+  const redirectUri = `${window.location.origin}${window.location.pathname}`;
+  const authUrl = new URL('https://open.feishu.cn/open-apis/authen/v1/authorize');
+  authUrl.searchParams.set('app_id', FEISHU_APP_ID);
+  authUrl.searchParams.set('redirect_uri', redirectUri);
+  authUrl.searchParams.set('state', oauthState);
+  window.location.href = authUrl.toString();
 }
 
 function requestFeishuAuthCode() {
