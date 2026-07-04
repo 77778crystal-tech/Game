@@ -40,7 +40,8 @@ export const booths = [
     theme: '自然表达 / 会议沟通',
     type: 'choice',
     emoji: '🗣️',
-    question: 'Which one sounds more natural?',
+    question: 'When you want to say “我刚刚没太听清”，which one sounds more natural?',
+    questionTranslation: '当你想表达“我刚刚没太听清”时，哪个说法更自然？',
     options: [
       'A. I didn’t understand you.',
       'B. I didn’t quite catch that.',
@@ -59,6 +60,7 @@ export const booths = [
     referenceImage: gecReference,
     question: '将下面算式写成英文句子',
     equation: '6 × 5 - 6 = 24',
+    hint: '提示卡：可以直接写成 “Six times five minus six equals twenty-four.” 注意句末可以不写句号。',
     symbolHints: [
       { symbol: '+', text: 'plus / add' },
       { symbol: '-', text: 'minus / subtract' },
@@ -228,6 +230,7 @@ export const booths = [
     type: 'audio',
     emoji: '🎧',
     question: "It's ______ that we should be together.",
+    hint: '提示卡：空格词是 undeniable，意思是“不可否认的”。',
     audioFile: engineerSong,
     sourceFile: '111111.mp4',
     options: [],

@@ -15,6 +15,7 @@ const state = {
   textAnswer: '',
   matchAnswers: {},
   selectedLotId: null,
+  hintVisible: false,
   feedback: ''
 };
 
@@ -71,6 +72,7 @@ function setScreen(screen) {
   state.textAnswer = '';
   state.matchAnswers = {};
   state.selectedLotId = null;
+  state.hintVisible = false;
   state.feedback = '';
   render();
 }
@@ -82,6 +84,7 @@ function openModal(modal, boothId = null) {
   state.textAnswer = '';
   state.matchAnswers = {};
   state.selectedLotId = null;
+  state.hintVisible = false;
   state.feedback = '';
   render();
 }
@@ -148,11 +151,15 @@ function renderMap() {
   const total = state.booths.length || 7;
   const completeCount = completedCount();
   const playerPos = playerStops[Math.min(completeCount, playerStops.length - 1)];
+  const progressFillWidth = Math.max(1.2, (completeCount / total) * 31.8);
   return `
     <img class="screen-bg" src="${ASSET}map.png" alt="" />
     <div class="map-ui" aria-label="Game progress">
-      <div class="progress-pill">Progress ${completeCount} / ${total}</div>
-      <div class="star-strip">${state.booths.map((booth) => `<span class="star ${isCompleted(booth) ? 'on' : ''}">★</span>`).join('')}</div>
+      <div class="top-progress-label">BOOTH PROGRESS</div>
+      <div class="top-progress-fill" style="width:${progressFillWidth}%"></div>
+      <div class="star-strip">
+        ${Array.from({ length: total }, (_, index) => `<span class="star ${index < completeCount ? 'on' : ''}">★</span>`).join('')}
+      </div>
     </div>
     <div class="map-counter-overlay" aria-label="${completeCount} out of ${total} stars collected">
       <span>${completeCount}</span>
@@ -168,7 +175,8 @@ function renderMap() {
       ${state.booths.map((booth) => renderHotspot(booth)).join('')}
     </div>
     ${completeCount === total ? `<button class="draw-entry pixel-btn primary" data-action="draw">Lucky Draw</button>` : ''}
-    <button class="reset-link" data-action="reset" type="button">Reset progress</button>
+    <button class="map-yellow-button map-reset-button" data-action="reset" type="button"><span>Reset progress</span></button>
+    <button class="map-yellow-button map-start-button" type="button"><span>Start Challenge</span></button>
   `;
 }
 
@@ -264,6 +272,7 @@ function renderQuestionModal() {
         </header>
         <section class="question-body">
           ${renderQuestionContent(booth)}
+          ${renderHint(booth)}
         </section>
         <footer class="modal-actions question-actions">
           <p class="reward-note">+1 star after completion</p>
@@ -281,11 +290,26 @@ function renderQuestionModal() {
 function renderOption(option, index) {
   const label = String.fromCharCode(65 + index);
   const selected = state.selectedOption === index;
+  const booth = activeBooth();
+  const translation = booth?.optionTranslations?.[index];
   return `
     <button class="option-card ${selected ? 'selected' : ''}" data-action="select-option" data-index="${index}">
       <span class="option-letter">${label}</span>
-      <span>${option}</span>
+      <span class="option-text">
+        <span>${option}</span>
+        ${translation ? `<small>${translation}</small>` : ''}
+      </span>
     </button>
+  `;
+}
+
+function renderHint(booth) {
+  if (!booth.hint) return '';
+  return `
+    <div class="hint-block">
+      <button class="hint-btn" data-action="toggle-hint" type="button">提示卡</button>
+      ${state.hintVisible ? `<p>${booth.hint}</p>` : ''}
+    </div>
   `;
 }
 
@@ -301,6 +325,7 @@ function renderChoiceQuestion(booth) {
   return `
     ${booth.coverImage ? `<img class="question-media" src="${booth.coverImage}" alt="" />` : ''}
     <h3 id="question-title">${booth.question}</h3>
+    ${booth.questionTranslation ? `<p class="question-translation">${booth.questionTranslation}</p>` : ''}
     ${booth.prompt ? `<p class="prompt">${formatLines(booth.prompt)}</p>` : ''}
     <div class="options">
       ${(booth.options || []).map((option, index) => renderOption(option, index)).join('')}
@@ -435,10 +460,15 @@ function handleAction(action, payload = {}) {
   if (action === 'map') { playSfx('click'); setScreen('map'); }
   if (action === 'close') { playSfx('click'); closeModal(); }
   if (action === 'reset') { playSfx('click'); resetProgress(); }
-  if (action === 'booth') { playSfx('click'); openModal('booth', boothId); }
+  if (action === 'booth') { playSfx('start'); openModal('question', boothId); }
   if (action === 'start-question') { playSfx('start'); openModal('question', boothId); }
-  if (action === 'booth-back') { playSfx('click'); openModal('booth', state.activeBoothId); }
+  if (action === 'booth-back') { playSfx('click'); closeModal(); }
   if (action === 'draw') { playSfx('draw'); openModal('draw'); }
+  if (action === 'toggle-hint') {
+    playSfx('click');
+    state.hintVisible = !state.hintVisible;
+    render();
+  }
   if (action === 'select-option') {
     playSfx('select');
     state.selectedOption = Number(index);

@@ -106,33 +106,57 @@ button {
 
 .map-ui {
   position: absolute;
-  top: 2.3%;
-  left: 50%;
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  transform: translateX(-50%);
+  inset: 0;
   z-index: 2;
+  pointer-events: none;
 }
 
-.progress-pill,
-.star-strip {
-  border: 3px solid #253b48;
-  border-radius: 8px;
-  background: rgba(248, 254, 255, .92);
-  padding: 8px 14px;
-  font-weight: 900;
-  box-shadow: 0 5px 0 rgba(37, 59, 72, .22);
+.top-progress-fill {
+  position: absolute;
+  left: 33.1%;
+  top: 5.6%;
+  max-width: 31.8%;
+  height: 1.55%;
+  background: #37d7a6;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(37, 59, 72, .22);
+}
+
+.top-progress-label {
+  position: absolute;
+  left: 29.3%;
+  top: 1.6%;
+  width: 39.4%;
+  height: 3%;
+  display: grid;
+  place-items: center;
+  background: #6757e8;
+  color: #f8feff;
+  font-size: clamp(10px, 1vw, 16px);
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 2px 2px 0 rgba(37, 59, 72, .55);
 }
 
 .star-strip {
-  display: flex;
-  gap: 6px;
+  position: absolute;
+  top: 4.2%;
+  right: 2.8%;
+  width: 22.6%;
+  height: 6.7%;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  justify-items: center;
+  align-items: center;
+  background: #6757e8;
 }
 
 .star {
   color: #a9b7c2;
-  text-shadow: 2px 2px 0 #253b48;
+  font-size: clamp(18px, 2.45vw, 39px);
+  line-height: 1;
+  text-shadow: 3px 3px 0 #253b48;
 }
 
 .star.on {
@@ -274,18 +298,60 @@ button {
   z-index: 2;
 }
 
-.reset-link {
+.map-yellow-button {
   position: absolute;
-  left: 4%;
-  bottom: 4%;
-  border: 3px solid #253b48;
-  border-radius: 7px;
-  background: rgba(248, 254, 255, .88);
+  bottom: 5%;
+  width: 17.2%;
+  height: 7.6%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: clamp(3px, .38vw, 6px) solid #253b48;
+  border-radius: clamp(6px, .7vw, 10px);
+  background: #ffcf56;
   color: #253b48;
-  font-weight: 800;
-  padding: 8px 12px;
+  font-weight: 900;
+  padding: 0 2% 0 4.7%;
+  font-size: clamp(13px, 1.65vw, 27px);
+  line-height: 1.02;
+  white-space: nowrap;
   cursor: pointer;
   z-index: 2;
+  box-shadow: 0 clamp(5px, .7vw, 11px) 0 rgba(37, 59, 72, .28);
+}
+
+.map-yellow-button span {
+  position: relative;
+  z-index: 1;
+}
+
+.map-yellow-button::before {
+  content: "";
+  position: absolute;
+  left: 6.6%;
+  top: 34%;
+  width: 4.2%;
+  height: 39%;
+  background: #58e6c8;
+  border: clamp(2px, .22vw, 4px) solid #253b48;
+}
+
+.map-yellow-button::after {
+  content: "";
+  position: absolute;
+  top: 12%;
+  left: 8%;
+  right: 7%;
+  height: 13%;
+  background: #fff6b5;
+}
+
+.map-reset-button {
+  right: 25.5%;
+}
+
+.map-start-button {
+  right: 6%;
 }
 
 .modal-layer {
@@ -455,6 +521,13 @@ button {
   font-size: 21px;
   font-weight: 800;
   line-height: 1.35;
+}
+
+.question-translation {
+  margin: -8px 0 18px;
+  color: #466173;
+  font-size: 18px;
+  font-weight: 850;
 }
 
 .prompt span {
@@ -640,6 +713,19 @@ button {
   cursor: pointer;
 }
 
+.option-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.option-text small {
+  color: #587084;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
 .option-card.selected {
   background: #eaffff;
   box-shadow: inset 0 0 0 4px #37d7a6;
@@ -653,6 +739,38 @@ button {
   border: 2px solid #253b48;
   background: #77ddf2;
   font-weight: 900;
+}
+
+.hint-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  clear: both;
+}
+
+.hint-btn {
+  border: 3px solid #253b48;
+  border-radius: 6px;
+  background: #ffcf56;
+  color: #253b48;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(37, 59, 72, .24);
+}
+
+.hint-block p {
+  margin: 0;
+  border: 3px solid #253b48;
+  border-radius: 6px;
+  background: #fffdf2;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.35;
 }
 
 .question-actions {
