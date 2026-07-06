@@ -660,8 +660,9 @@ function submitAnswer() {
 
 function isAnswerCorrect(booth) {
   if (booth.type === 'equation') {
-    const answers = booth.acceptedAnswers?.length ? booth.acceptedAnswers : [booth.answer];
     if (!state.textAnswer.trim()) return false;
+    if (booth.id === 3) return isGecEquationAnswerCorrect(state.textAnswer);
+    const answers = booth.acceptedAnswers?.length ? booth.acceptedAnswers : [booth.answer];
     return answers.some((answer) => normalizeAnswer(answer) === normalizeAnswer(state.textAnswer));
   }
   if (booth.type === 'audio') {
@@ -688,6 +689,50 @@ function normalizeAnswer(value) {
     .toLowerCase()
     .replace(/[.。!！?？]/g, '')
     .replace(/\s+/g, ' ');
+}
+
+function isGecEquationAnswerCorrect(value) {
+  const raw = String(value || '').toLowerCase();
+  const hasEnglishStructure = /\b(times|multiplied|multiply|minus|subtract|subtracted|equals|equal|makes|gives|answer|result|product|quantity|parenthesis|take)\b/.test(raw);
+  if (!hasEnglishStructure) return false;
+
+  const answer = normalizeGecEquationAnswer(value);
+  const operation = '(?:times|multiplied by)';
+  const result = '(?:equals|is|makes|gives|is equal to)';
+  const getResult = '(?:to get|and you get|and the result is|the result is|equals|is)';
+
+  const patterns = [
+    new RegExp(`^6 ${operation} 5 minus 6 ${result} 24$`),
+    /^multiply 6 by 5 then subtract 6(?: to get)? 24$/,
+    /^first multiply 6 by 5 then subtract 6(?: the answer is)? 24$/,
+    new RegExp(`^6 ${operation} 5 is 30 and 30 minus 6 ${result} 24$`),
+    new RegExp(`^subtract 6 from 6 ${operation} 5 ${getResult} 24$`),
+    new RegExp(`^6 subtracted from 6 ${operation} 5 ${result} 24$`),
+    new RegExp(`^take 6 away from 6 ${operation} 5 and you get 24$`),
+    /^the product of 6 and 5 minus 6 (?:equals|is) 24$/,
+    /^open parenthesis 6 times 5 close parenthesis minus 6 (?:equals|is) 24$/,
+    /^open parenthesis 6 multiplied by 5 close parenthesis minus 6 (?:equals|is) 24$/,
+    new RegExp(`^(?:the )?quantity 6 ${operation} 5 minus 6 (?:equals|is) 24$`),
+  ];
+
+  return patterns.some((pattern) => pattern.test(answer));
+}
+
+function normalizeGecEquationAnswer(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/twenty[-\s]?four/g, '24')
+    .replace(/\btwentyfour\b/g, '24')
+    .replace(/\bthirty\b/g, '30')
+    .replace(/\bsix\b/g, '6')
+    .replace(/\bfive\b/g, '5')
+    .replace(/[=]/g, ' equals ')
+    .replace(/[×*]/g, ' times ')
+    .replace(/[-–—]/g, ' minus ')
+    .replace(/[()]/g, ' ')
+    .replace(/[.,!?;:，。！？；：]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function isCompleted(booth) {

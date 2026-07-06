@@ -776,6 +776,8 @@ button {
   font-size: 16px;
   font-weight: 850;
   line-height: 1.35;
+  text-align: left;
+  white-space: pre-line;
 }
 
 .question-actions {
@@ -809,6 +811,10 @@ button {
   background: #fffdf2;
 }
 
+.draw-modal {
+  width: min(92%, 720px);
+}
+
 .success-star {
   font-size: 64px;
 }
@@ -831,10 +837,15 @@ button {
 }
 
 .draw-submit-btn {
-  min-width: 330px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 430px;
   max-width: 100%;
-  padding: 0 22px;
-  font-size: 17px;
+  padding: 0 26px;
+  font-size: 16px;
+  line-height: 1.15;
+  text-align: center;
   white-space: nowrap;
 }
 
@@ -1019,6 +1030,14 @@ button {
     padding: 18px;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .draw-submit-btn {
+    min-width: 0;
+    width: 100%;
+    height: auto;
+    min-height: 52px;
+    white-space: normal;
   }
 }
 

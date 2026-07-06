@@ -60,7 +60,7 @@ export const booths = [
     referenceImage: gecReference,
     question: '将下面算式写成英文句子',
     equation: '6 × 5 - 6 = 24',
-    hint: '提示卡：可以直接写成 “Six times five minus six equals twenty-four.” 注意句末可以不写句号。',
+    hint: '所有可用的句子结构👇\n\n( ) times ( ) minus ( ) equals ( ).\n\n( ) multiplied by ( ) minus ( ) equals ( ).\n\nMultiply ( ) by ( ), then subtract ( ) to get ( ).\n\nFirst, multiply ( ) by ( ). Then subtract ( ). The answer is ( ).\n\nOpen parenthesis, ( ) times ( ), close parenthesis, minus ( ) equals ( ).',
     symbolHints: [
       { symbol: '+', text: 'plus / add' },
       { symbol: '-', text: 'minus / subtract' },
